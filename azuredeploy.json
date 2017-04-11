@@ -2,33 +2,99 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "nestedstg2Type": {
+    "testnestednicName": {
       "type": "string",
-      "defaultValue": "Standard_LRS",
-      "allowedValues": [
-        "Standard_LRS",
-        "Standard_ZRS",
-        "Standard_GRS",
-        "Standard_RAGRS",
-        "Premium_LRS"
-      ]
+      "minLength": 1
+    },
+    "testnestedpubipDnsName": {
+      "type": "string",
+      "minLength": 1
     }},
   "variables": {
-    "nestedstg2Name": "[concat('nestedstg2', uniqueString(resourceGroup().id))]"},
+    "testvmnestedPrefix": "10.0.0.0/16",
+    "testvmnestedSubnet1Name": "Subnet-1",
+    "testvmnestedSubnet1Prefix": "10.0.0.0/24",
+    "testvmnestedSubnet2Name": "Subnet-2",
+    "testvmnestedSubnet2Prefix": "10.0.1.0/24",
+    "testnestednicVnetID": "[resourceId('Microsoft.Network/virtualNetworks', 'testvmnested')]",
+    "testnestednicSubnetRef": "[concat(variables('testnestednicVnetID'), '/subnets/', variables('testvmnestedSubnet1Name'))]",
+    "testnestedpubipName": "testnestedpubip"},
   "resources": [
     {
-      "name": "[variables('nestedstg2Name')]",
-      "type": "Microsoft.Storage/storageAccounts",
+      "name": "testvmnested",
+      "type": "Microsoft.Network/virtualNetworks",
       "location": "[resourceGroup().location]",
-      "apiVersion": "2016-01-01",
-      "sku": {
-        "name": "[parameters('nestedstg2Type')]"
-      },
+      "apiVersion": "2016-03-30",
       "dependsOn": [ ],
       "tags": {
-        "displayName": "nestedstg2"
+        "displayName": "testvmnested"
       },
-      "kind": "Storage"
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('testvmnestedPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('testvmnestedSubnet1Name')]",
+            "properties": {
+              "addressPrefix": "[variables('testvmnestedSubnet1Prefix')]"
+            }
+          },
+          {
+            "name": "[variables('testvmnestedSubnet2Name')]",
+            "properties": {
+              "addressPrefix": "[variables('testvmnestedSubnet2Prefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[parameters('testnestednicName')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', 'testvmnested')]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('testnestedpubipName'))]"
+      ],
+      "tags": {
+        "displayName": "testnestednic"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('testnestednicSubnetRef')]"
+              },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('testnestedpubipName'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('testnestedpubipName')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [ ],
+      "tags": {
+        "displayName": "testnestedpubip"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('testnestedpubipDnsName')]"
+        }
+      }
     }],
   "outputs": {}
 }
