@@ -2,66 +2,164 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "testnestednicName": {
+    "strgmul5Type": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_ZRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ]
+    },
+    "multestvm5Name": {
       "type": "string",
       "minLength": 1
     },
-    "testnestedpubipDnsName": {
+    "multestvm5AdminUserName": {
       "type": "string",
       "minLength": 1
-    }},
+    },
+    "multestvm5AdminPassword": {
+      "type": "securestring"
+    },
+    "multestvm5WindowsOSVersion": {
+      "type": "string",
+      "defaultValue": "2012-R2-Datacenter",
+      "allowedValues": [
+        "2008-R2-SP1",
+        "2012-Datacenter",
+        "2012-R2-Datacenter",
+        "Windows-Server-Technical-Preview"
+      ]
+    },
+    "numberOfInstances": {
+      "type": "int",
+      "defaultValue": 2,
+      "minValue": 2,
+      "maxValue": 5,
+      "metadata": {
+        "description": "Number of VMs to deploy, limit 5 since this sample is using a single storage account"
+      }
+    },
+    "winmulvm5Name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "winmulvm5AdminUserName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "winmulvm5AdminPassword": {
+      "type": "securestring"
+    },
+    "winmulvm5WindowsOSVersion": {
+      "type": "string",
+      "defaultValue": "2012-R2-Datacenter",
+      "allowedValues": [
+        "2008-R2-SP1",
+        "2012-Datacenter",
+        "2012-R2-Datacenter",
+        "Windows-Server-Technical-Preview"
+      ]
+    },
+    "avlset5Name": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
   "variables": {
-    "testvmnestedPrefix": "10.0.0.0/16",
-    "testvmnestedSubnet1Name": "Subnet-1",
-    "testvmnestedSubnet1Prefix": "10.0.0.0/24",
-    "testvmnestedSubnet2Name": "Subnet-2",
-    "testvmnestedSubnet2Prefix": "10.0.1.0/24",
-    "testnestednicVnetID": "[resourceId('Microsoft.Network/virtualNetworks', 'testvmnested')]",
-    "testnestednicSubnetRef": "[concat(variables('testnestednicVnetID'), '/subnets/', variables('testvmnestedSubnet1Name'))]",
-    "testnestedpubipName": "testnestedpubip"},
+    "strgmul5Name": "[concat('strgmul5', uniqueString(resourceGroup().id))]",
+    "mulnw5Prefix": "10.0.0.0/16",
+    "mulnw5Subnet1Name": "Subnet-1",
+    "mulnw5Subnet1Prefix": "10.0.0.0/24",
+    "mulnw5Subnet2Name": "Subnet-2",
+    "mulnw5Subnet2Prefix": "10.0.1.0/24",
+    "multestvm5ImagePublisher": "MicrosoftWindowsServer",
+    "multestvm5ImageOffer": "WindowsServer",
+    "multestvm5OSDiskName": "multestvm5OSDisk",
+    "multestvm5VmSize": "Standard_D2_v2",
+    "multestvm5VnetID": "[resourceId('Microsoft.Network/virtualNetworks', 'mulnw5')]",
+    "multestvm5SubnetRef": "[concat(variables('multestvm5VnetID'), '/subnets/', variables('mulnw5Subnet1Name'))]",
+    "multestvm5StorageAccountContainerName": "vhds",
+    "multestvm5NicName": "[concat(parameters('multestvm5Name'), 'NetworkInterface')]",
+    "winmulvm5ImagePublisher": "MicrosoftWindowsServer",
+    "winmulvm5ImageOffer": "WindowsServer",
+    "winmulvm5OSDiskName": "winmulvm5OSDisk",
+    "winmulvm5VmSize": "Standard_D2_v2",
+    "winmulpub5DnsName": "pubdnstest",
+    "winmulvm5VnetID": "[resourceId('Microsoft.Network/virtualNetworks', 'mulnw5')]",
+    "winmulvm5SubnetRef": "[concat(variables('winmulvm5VnetID'), '/subnets/', variables('mulnw5Subnet1Name'))]",
+    "winmulvm5StorageAccountContainerName": "vhds",
+    "winmulvm5NicName": "[concat(parameters('winmulvm5Name'), 'NetworkInterface')]",
+    "winmulpub5Name": "winmulpub5"
+  },
   "resources": [
     {
-      "name": "testvmnested",
+      "name": "[concat('strgmul5name',copyIndex())]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "strgmul",
+        "count": "[parameters('numberOfInstances')]"
+      },
+      "apiVersion": "2016-01-01",
+      "sku": {
+        "name": "[parameters('strgmul5Type')]"
+      },
+      "dependsOn": [],
+      "tags": {
+        "displayName": "strgmul5"
+      },
+      "kind": "Storage"
+    },
+    {
+      "name": "mulnw5",
       "type": "Microsoft.Network/virtualNetworks",
       "location": "[resourceGroup().location]",
       "apiVersion": "2016-03-30",
       "dependsOn": [ ],
       "tags": {
-        "displayName": "testvmnested"
+        "displayName": "mulnw5"
       },
       "properties": {
         "addressSpace": {
           "addressPrefixes": [
-            "[variables('testvmnestedPrefix')]"
+            "[variables('mulnw5Prefix')]"
           ]
         },
         "subnets": [
           {
-            "name": "[variables('testvmnestedSubnet1Name')]",
+            "name": "[variables('mulnw5Subnet1Name')]",
             "properties": {
-              "addressPrefix": "[variables('testvmnestedSubnet1Prefix')]"
+              "addressPrefix": "[variables('mulnw5Subnet1Prefix')]"
             }
           },
           {
-            "name": "[variables('testvmnestedSubnet2Name')]",
+            "name": "[variables('mulnw5Subnet2Name')]",
             "properties": {
-              "addressPrefix": "[variables('testvmnestedSubnet2Prefix')]"
+              "addressPrefix": "[variables('mulnw5Subnet2Prefix')]"
             }
           }
         ]
       }
     },
     {
-      "name": "[parameters('testnestednicName')]",
+      "name": "[concat('winmulvm5NicName',copyIndex())]",
       "type": "Microsoft.Network/networkInterfaces",
       "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "nicLoop",
+        "count": "[parameters('numberOfInstances')]"
+      },
       "apiVersion": "2016-03-30",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', 'testvmnested')]",
-        "[resourceId('Microsoft.Network/publicIPAddresses', variables('testnestedpubipName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks', 'mulnw5')]",
+        "pubipaddr"
       ],
       "tags": {
-        "displayName": "testnestednic"
+        "displayName": "winmulvm5Nic"
       },
       "properties": {
         "ipConfigurations": [
@@ -70,10 +168,10 @@
             "properties": {
               "privateIPAllocationMethod": "Dynamic",
               "subnet": {
-                "id": "[variables('testnestednicSubnetRef')]"
+                "id": "[variables('winmulvm5SubnetRef')]"
               },
               "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('testnestedpubipName'))]"
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat('winmulpub5Name',copyIndex()))]"
               }
             }
           }
@@ -81,19 +179,87 @@
       }
     },
     {
-      "name": "[variables('testnestedpubipName')]",
+      "name": "[concat('winmulvm5Name',copyIndex())]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "vmloop",
+        "count": "[parameters('numberOfInstances')]"
+      },
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "strgmul",
+        "nicLoop"
+      ],
+      "tags": {
+        "displayName": "winmulvm5"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('winmulvm5VmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[concat('winmulvm5Name',copyIndex())]",
+          "adminUsername": "[parameters('winmulvm5AdminUsername')]",
+          "adminPassword": "[parameters('winmulvm5AdminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('winmulvm5ImagePublisher')]",
+            "offer": "[variables('winmulvm5ImageOffer')]",
+            "sku": "[parameters('winmulvm5WindowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[concat('winmulvm5OSDisk',copyIndex())]",
+            "vhd": {
+              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', concat('strgmul5name',copyIndex())), '2016-01-01').primaryEndpoints.blob, variables('winmulvm5StorageAccountContainerName'), '/', variables('winmulvm5OSDiskName'), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('winmulvm5NicName',copyIndex()))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "[concat('winmulpub5Name',copyIndex())]",
       "type": "Microsoft.Network/publicIPAddresses",
       "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "pubipaddr",
+        "count": "[parameters('numberOfInstances')]"
+      },
       "apiVersion": "2016-03-30",
-      "dependsOn": [ ],
+      "dependsOn": [],
       "tags": {
-        "displayName": "testnestedpubip"
+        "displayName": "winmulpub5"
       },
       "properties": {
         "publicIPAllocationMethod": "Dynamic",
         "dnsSettings": {
-          "domainNameLabel": "[parameters('testnestedpubipDnsName')]"
+          "domainNameLabel": "[concat('testdnsvm',copyIndex())]"
         }
+      }
+    },
+    {
+      "name": "[parameters('avlset5Name')]",
+      "type": "Microsoft.Compute/availabilitySets",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [ ],
+      "tags": {
+        "displayName": "avlset5"
+      },
+      "properties": {
+        "platformUpdateDomainCount": 3,
+        "platformFaultDomainCount": 3
       }
     }],
   "outputs": {}
