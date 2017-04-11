@@ -2,5 +2,23 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "multestvm5Name": {
+      "value": "multiplevm5"
+    },
+    "multestvm5AdminUserName": {
+      "value": "testadmin"
+    },
+    "numberOfInstances": {
+      "value": 2
+    },
+    "winmulvm5Name": {
+      "value": "winvm5"
+    },
+    "winmulvm5AdminUserName": {
+      "value": "testadmin"
+    },
+    "avlset5Name": {
+      "value": "avlset5"
+    }
   }
 }
